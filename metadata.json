@@ -1,0 +1,6 @@
+{
+  "name": "Crescent Opposition Briefing Engine",
+  "description": "Scout enemy batsmen & bowler weaknesses, map strategic pitching targets, configure protective fielder cordons, and print pro-grade dossiers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
