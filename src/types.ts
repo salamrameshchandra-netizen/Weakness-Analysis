@@ -8,6 +8,12 @@ export type BowlingStyle =
   | 'Left-Arm Orthodox' 
   | 'Left-Arm Wrist-Spin';
 
+export interface Fielder {
+  name: string;
+  x: number; // 0 to 200 coordinate space
+  y: number; // 0 to 200 coordinate space
+}
+
 export interface PlayerStats {
   matches: number;
   average?: number; // for batsman
@@ -23,6 +29,7 @@ export interface OpponentBatsman {
   vulnerableShots: string[]; // e.g., 'Cover Drive', 'Pull Shot'
   pitchMapWeakness: string; // e.g., 'short-body', 'good-outside-off'
   tacticalFieldSetup: string; // e.g., 'shortline-choke', 'slip-cordon'
+  customFielders?: Fielder[]; // manual custom fielding alignments
   notes: string;
   stats: PlayerStats;
   customAdded?: boolean;

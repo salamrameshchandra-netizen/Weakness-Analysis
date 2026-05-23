@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PRELOADED_BATSMEN, PRELOADED_BOWLERS } from './data/mockPlayers';
-import { OpponentBatsman, OpponentBowler } from './types';
+import { OpponentBatsman, OpponentBowler, Fielder } from './types';
 import { PlayerForm } from './components/PlayerForm';
 import { PrintReport } from './components/PrintReport';
 import { PitchMap } from './components/PitchMap';
-import { FieldPlanner } from './components/FieldPlanner';
+import { FieldPlanner, STRATEGIST_PRESETS } from './components/FieldPlanner';
 import { 
   Plus, Search, Trash2, Printer, Trophy, ShieldAlert, Zap, CircleAlert, 
   Sparkles, RotateCcw, UserMinus, ShieldAlert as AlertIcon, BookOpen, ExternalLink 
@@ -48,6 +48,25 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
 
+  // Custom Field Placement modal state
+  const [customizingFieldBatsman, setCustomizingFieldBatsman] = useState<OpponentBatsman | null>(null);
+  const [tempFielders, setTempFielders] = useState<Fielder[]>([]);
+  const [tempFieldSetup, setTempFieldSetup] = useState<string>('custom');
+
+  useEffect(() => {
+    if (customizingFieldBatsman) {
+      setTempFieldSetup(customizingFieldBatsman.tacticalFieldSetup);
+      if (customizingFieldBatsman.customFielders && customizingFieldBatsman.customFielders.length === 9) {
+        setTempFielders(customizingFieldBatsman.customFielders);
+      } else {
+        const currentPreset = STRATEGIST_PRESETS[customizingFieldBatsman.tacticalFieldSetup] || STRATEGIST_PRESETS['balanced-default'];
+        setTempFielders(currentPreset.fielders(customizingFieldBatsman.battingHand));
+      }
+    } else {
+      setTempFielders([]);
+    }
+  }, [customizingFieldBatsman]);
+
   // Sync state to local storage
   useEffect(() => {
     localStorage.setItem('cricket_batsmen_scout', JSON.stringify(batsmen));
@@ -86,6 +105,15 @@ export default function App() {
   const handleAddBatsman = (newB: OpponentBatsman) => {
     setBatsmen([newB, ...batsmen]);
     setIsAddingNew(false);
+  };
+
+  const handleSaveFieldLayout = (id: string, updatedFielders: Fielder[], setupKey: string) => {
+    setBatsmen(prev => prev.map(b => b.id === id ? { 
+      ...b, 
+      customFielders: updatedFielders, 
+      tacticalFieldSetup: setupKey 
+    } : b));
+    setCustomizingFieldBatsman(null);
   };
 
   const handleAddBowler = (newBowl: OpponentBowler) => {
@@ -399,12 +427,23 @@ export default function App() {
                           </div>
 
                           <div className="space-y-1 pl-1">
-                            <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold block">Defensive Trap Placement</span>
+                            <div className="flex justify-between items-center pb-0.5">
+                              <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold block">Defensive Trap Placement</span>
+                              <button
+                                type="button"
+                                onClick={() => setCustomizingFieldBatsman(batsman)}
+                                className="text-[9px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-0.5 cursor-pointer hover:underline transition"
+                                title="Edit Field Placement"
+                              >
+                                ✏ EDIT PLACEMENT
+                              </button>
+                            </div>
                             <div className="rounded overflow-hidden">
                               <FieldPlanner
                                 presetKey={batsman.tacticalFieldSetup}
                                 battingHand={batsman.battingHand}
                                 readOnly={true}
+                                customFielders={batsman.customFielders}
                               />
                             </div>
                           </div>
@@ -642,6 +681,67 @@ export default function App() {
         <div>HIGH DENSITY LAYOUT PARADIGM EXECUTED IN REACT & TAILWIND CSS</div>
         <div>OPPOSITION INTEL SYSTEM • OP-DATA PERSISTS LOCALLY</div>
       </footer>
+
+      {/* Interactive fielding placements customization modal */}
+      {customizingFieldBatsman && (
+        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-slate-950 border border-slate-850 rounded-xl max-w-xl w-full shadow-2xl overflow-hidden text-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-5 py-3.5 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Custom Field placement</span>
+                  <span className="text-[9px] bg-sky-500/10 text-sky-400 px-1.5 py-0.5 rounded border border-sky-500/20 uppercase font-mono tracking-wider font-semibold">
+                    Interactive Editor
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Reposition fielders for defending matches against <strong>{customizingFieldBatsman.name}</strong> ({customizingFieldBatsman.battingHand})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCustomizingFieldBatsman(null)}
+                className="text-slate-400 hover:text-white transition cursor-pointer text-xs font-bold bg-slate-800 hover:bg-slate-750 py-1 px-2 rounded-md"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              <FieldPlanner
+                presetKey={tempFieldSetup}
+                onSelectPreset={setTempFieldSetup}
+                battingHand={customizingFieldBatsman.battingHand}
+                customFielders={tempFielders.length === 9 ? tempFielders : undefined}
+                onChangeCustomFielders={setTempFielders}
+                readOnly={false}
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3.5 bg-slate-900 border-t border-slate-800 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setCustomizingFieldBatsman(null)}
+                className="px-3.5 py-1.5 rounded bg-slate-800 border border-slate-700 hover:bg-slate-755 text-slate-300 text-xs font-semibold transition cursor-pointer"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleSaveFieldLayout(customizingFieldBatsman.id, tempFielders, tempFieldSetup);
+                }}
+                className="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition cursor-pointer"
+              >
+                Save Custom Layout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Printable / dossier generation preview overlay board */}
       {printingPlayer && (

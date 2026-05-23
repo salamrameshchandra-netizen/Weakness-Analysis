@@ -165,6 +165,7 @@ const PlayerSection: React.FC<{
                   presetKey={(player as OpponentBatsman).tacticalFieldSetup}
                   battingHand={(player as OpponentBatsman).battingHand}
                   readOnly={true}
+                  customFielders={(player as OpponentBatsman).customFielders}
                 />
               </div>
             </div>

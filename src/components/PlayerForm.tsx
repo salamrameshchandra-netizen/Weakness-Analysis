@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OpponentBatsman, OpponentBowler, BattingHand, BowlingStyle } from '../types';
+import { OpponentBatsman, OpponentBowler, BattingHand, BowlingStyle, Fielder } from '../types';
 import { PitchMap } from './PitchMap';
 import { FieldPlanner, STRATEGIST_PRESETS } from './FieldPlanner';
 import { Plus, X, Search, Check, ShieldAlert } from 'lucide-react';
@@ -58,6 +58,7 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
     profileType === 'batsman' ? 'good-outside-off' : 'good-stumps'
   );
   const [fieldSetup, setFieldSetup] = useState<string>('balanced-default');
+  const [customFielders, setCustomFielders] = useState<Fielder[] | undefined>(undefined);
 
   const handleToggleWeakness = (item: string) => {
     if (selectedWeaknesses.includes(item)) {
@@ -102,6 +103,7 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
         vulnerableShots: selectedShots.length ? selectedShots : ['None identified'],
         pitchMapWeakness: pitchZone || 'good-outside-off',
         tacticalFieldSetup: fieldSetup,
+        customFielders: fieldSetup === 'custom' ? customFielders : undefined,
         notes: notes.trim() || 'No additional notes provided.',
         stats: {
           matches: matches || 0,
@@ -439,13 +441,15 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
               Trap Preset Field layout
             </span>
             <p className="text-[10px] text-slate-500 leading-tight">
-              Pick a match defense structure that exploits their weakness best.
+              Pick a match defense structure or map a custom field to exploit their weakness.
             </p>
             <div className="bg-white rounded p-1 border border-slate-250 inline-block">
               <FieldPlanner
                 presetKey={fieldSetup}
                 onSelectPreset={setFieldSetup}
                 battingHand={battingHand}
+                customFielders={customFielders}
+                onChangeCustomFielders={setCustomFielders}
               />
             </div>
           </div>
