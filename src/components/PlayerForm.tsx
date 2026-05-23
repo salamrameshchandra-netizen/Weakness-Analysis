@@ -41,11 +41,12 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
   const [bowlingStyle, setBowlingStyle] = useState<BowlingStyle>('Right-Arm Fast');
   const [notes, setNotes] = useState('');
   
-  // Stats
-  const [matches, setMatches] = useState<number>(0);
-  const [average, setAverage] = useState<number>(0);
-  const [economy, setEconomy] = useState<number>(6.5);
-  const [strikeRate, setStrikeRate] = useState<number>(20);
+  // Stats - Stored as strings to handle dynamic numeric/decimal input seamlessly without resets
+  const [matches, setMatches] = useState<string>('');
+  const [average, setAverage] = useState<string>('');
+  const [economy, setEconomy] = useState<string>('6.5');
+  const [strikeRate, setStrikeRate] = useState<string>('20');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Weaknesses and Shots
   const [selectedWeaknesses, setSelectedWeaknesses] = useState<string[]>([]);
@@ -92,9 +93,17 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return alert('Please enter a player name');
+    if (!name.trim()) {
+      setValidationError('Please enter a valid opponent player name');
+      return;
+    }
+    setValidationError(null);
+
+    const parsedCleanMatches = parseInt(matches, 10) || 0;
+    const parsedCleanStrikeRate = parseFloat(strikeRate) || 0;
 
     if (profileType === 'batsman') {
+      const parsedCleanAverage = parseFloat(average) || 0;
       const newBatsman: OpponentBatsman = {
         id: 'bat-' + Date.now(),
         name: name.trim(),
@@ -106,14 +115,15 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
         customFielders: fieldSetup === 'custom' ? customFielders : undefined,
         notes: notes.trim() || 'No additional notes provided.',
         stats: {
-          matches: matches || 0,
-          average: average || 0,
-          strikeRate: strikeRate || 100
+          matches: parsedCleanMatches,
+          average: parsedCleanAverage,
+          strikeRate: parsedCleanStrikeRate || 100
         },
         customAdded: true
       };
       onAddBatsman(newBatsman);
     } else {
+      const parsedCleanEconomy = parseFloat(economy) || 6.5;
       const newBowler: OpponentBowler = {
         id: 'bowl-' + Date.now(),
         name: name.trim(),
@@ -124,9 +134,9 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
         antiBowlerStrategy: fieldSetup === 'slip-cordon' ? 'charge-down' : fieldSetup === 'shortline-choke' ? 'death-fringe' : 'sweep-and-scurry',
         notes: notes.trim() || 'No additional notes provided.',
         stats: {
-          matches: matches || 0,
-          economy: economy || 6.5,
-          strikeRate: strikeRate || 24
+          matches: parsedCleanMatches,
+          economy: parsedCleanEconomy,
+          strikeRate: parsedCleanStrikeRate || 24
         },
         customAdded: true
       };
@@ -164,6 +174,7 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
             setSelectedWeaknesses([]);
             setSelectedShots([]);
             setPitchZone('good-outside-off');
+            setValidationError(null);
           }}
           className={`px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer
             ${profileType === 'batsman' 
@@ -179,6 +190,7 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
             setSelectedWeaknesses([]);
             setSelectedShots([]);
             setPitchZone('good-stumps');
+            setValidationError(null);
           }}
           className={`px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer
             ${profileType === 'bowler' 
@@ -188,6 +200,14 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
           Bowler Profile
         </button>
       </div>
+
+      {/* Validation Error banner */}
+      {validationError && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded text-red-800 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+          <ShieldAlert className="w-4 h-4 flex-shrink-0 text-red-500" />
+          <span className="font-semibold">{validationError}</span>
+        </div>
+      )}
 
       {/* Basic Profile Details */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -248,8 +268,8 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
             <input
               type="number"
               min="0"
-              value={matches === 0 ? '' : matches}
-              onChange={(e) => setMatches(Math.max(0, parseInt(e.target.value) || 0))}
+              value={matches}
+              onChange={(e) => setMatches(e.target.value)}
               placeholder="e.g. 15"
               className="w-full bg-white border border-slate-250 rounded px-2 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />
@@ -262,8 +282,8 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
                 type="number"
                 step="0.01"
                 min="0"
-                value={average === 0 ? '' : average}
-                onChange={(e) => setAverage(Math.max(0, parseFloat(e.target.value) || 0))}
+                value={average}
+                onChange={(e) => setAverage(e.target.value)}
                 placeholder="e.g. 34.50"
                 className="w-full bg-white border border-slate-250 rounded px-2 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500"
               />
@@ -275,8 +295,8 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
                 type="number"
                 step="0.01"
                 min="0"
-                value={economy === 0 ? '' : economy}
-                onChange={(e) => setEconomy(Math.max(0, parseFloat(e.target.value) || 0))}
+                value={economy}
+                onChange={(e) => setEconomy(e.target.value)}
                 placeholder="e.g. 7.20"
                 className="w-full bg-white border border-slate-250 rounded px-2 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500"
               />
@@ -289,8 +309,8 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
               type="number"
               step="0.1"
               min="0"
-              value={strikeRate === 0 ? '' : strikeRate}
-              onChange={(e) => setStrikeRate(Math.max(0, parseFloat(e.target.value) || 0))}
+              value={strikeRate}
+              onChange={(e) => setStrikeRate(e.target.value)}
               placeholder={profileType === 'batsman' ? 'e.g. 142.5' : 'e.g. 18.5'}
               className="w-full bg-white border border-slate-250 rounded px-2 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500"
             />

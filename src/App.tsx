@@ -104,6 +104,7 @@ export default function App() {
   // Add new player manual additions
   const handleAddBatsman = (newB: OpponentBatsman) => {
     setBatsmen([newB, ...batsmen]);
+    setActiveTab('batsmen'); // Ensure tab defaults to newly added batsman
     setIsAddingNew(false);
   };
 
@@ -118,6 +119,7 @@ export default function App() {
 
   const handleAddBowler = (newBowl: OpponentBowler) => {
     setBowlers([newBowl, ...bowlers]);
+    setActiveTab('bowlers'); // Ensure tab defaults to newly added bowler
     setIsAddingNew(false);
   };
 
