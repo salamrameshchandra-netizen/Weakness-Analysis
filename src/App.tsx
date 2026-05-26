@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { PRELOADED_BATSMEN, PRELOADED_BOWLERS } from './data/mockPlayers';
-import { OpponentBatsman, OpponentBowler, Fielder } from './types';
+import { OpponentBatsman, OpponentBowler, Fielder, VideoAnalysis } from './types';
 import { PlayerForm } from './components/PlayerForm';
 import { PrintReport } from './components/PrintReport';
 import { PitchMap } from './components/PitchMap';
 import { FieldPlanner, STRATEGIST_PRESETS } from './components/FieldPlanner';
+import { VideoAnalystModal } from './components/VideoAnalystModal';
 import { 
   Plus, Search, Trash2, Printer, Trophy, ShieldAlert, Zap, CircleAlert, 
-  Sparkles, RotateCcw, UserMinus, ShieldAlert as AlertIcon, BookOpen, ExternalLink 
+  Sparkles, RotateCcw, UserMinus, ShieldAlert as AlertIcon, BookOpen, ExternalLink,
+  Video
 } from 'lucide-react';
 
 export default function App() {
@@ -52,6 +54,63 @@ export default function App() {
   const [customizingFieldBatsman, setCustomizingFieldBatsman] = useState<OpponentBatsman | null>(null);
   const [tempFielders, setTempFielders] = useState<Fielder[]>([]);
   const [tempFieldSetup, setTempFieldSetup] = useState<string>('custom');
+
+  // Video scouting states
+  const [activeVideoScoutPlayer, setActiveVideoScoutPlayer] = useState<{
+    id: string;
+    type: 'batsman' | 'bowler';
+  } | null>(null);
+
+  const handleSaveVideoAnalysis = (
+    playerId: string,
+    type: 'batsman' | 'bowler',
+    analysis: VideoAnalysis,
+    attrs?: { weaknesses: string[]; pitchMap: string; setupPreset?: string }
+  ) => {
+    if (type === 'batsman') {
+      setBatsmen(prev => prev.map(b => {
+        if (b.id === playerId) {
+          const updated: OpponentBatsman = {
+            ...b,
+            videoAnalysis: analysis,
+          };
+          if (attrs) {
+            updated.weaknessTypes = attrs.weaknesses && attrs.weaknesses.length > 0 ? attrs.weaknesses : b.weaknessTypes;
+            updated.pitchMapWeakness = attrs.pitchMap || b.pitchMapWeakness;
+            if (attrs.setupPreset) {
+              updated.tacticalFieldSetup = attrs.setupPreset;
+            }
+          }
+          return updated;
+        }
+        return b;
+      }));
+    } else {
+      setBowlers(prev => prev.map(b => {
+        if (b.id === playerId) {
+          const updated: OpponentBowler = {
+            ...b,
+            videoAnalysis: analysis,
+          };
+          if (attrs) {
+            updated.weaknessTypes = attrs.weaknesses && attrs.weaknesses.length > 0 ? attrs.weaknesses : b.weaknessTypes;
+            updated.pitchMapLeak = attrs.pitchMap || b.pitchMapLeak;
+          }
+          return updated;
+        }
+        return b;
+      }));
+    }
+    setActiveVideoScoutPlayer(null);
+  };
+
+  const handleRemoveVideoAnalysis = (playerId: string, type: 'batsman' | 'bowler') => {
+    if (type === 'batsman') {
+      setBatsmen(prev => prev.map(b => b.id === playerId ? { ...b, videoAnalysis: undefined } : b));
+    } else {
+      setBowlers(prev => prev.map(b => b.id === playerId ? { ...b, videoAnalysis: undefined } : b));
+    }
+  };
 
   useEffect(() => {
     if (customizingFieldBatsman) {
@@ -356,6 +415,15 @@ export default function App() {
                           <div className="flex gap-1.5">
                             <button
                               type="button"
+                              onClick={() => setActiveVideoScoutPlayer({ id: batsman.id, type: 'batsman' })}
+                              className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 border border-blue-250 transition text-[10px] text-blue-800 font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                              title="AI Video Scouting and biomechanical evaluation"
+                            >
+                              <Video className="w-3.5 h-3.5" />
+                              AI VIDEO
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => setPrintingPlayer({ batsman })}
                               className="p-1.5 rounded bg-slate-100 hover:bg-slate-205 border border-slate-200 transition text-[10px] text-slate-705 font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
                               title="Generate PDF Dossier View"
@@ -451,6 +519,52 @@ export default function App() {
                           </div>
                         </div>
 
+                        {/* Video analysis summary block */}
+                        {batsman.videoAnalysis ? (
+                          <div className="bg-indigo-50 border border-indigo-150 p-3 rounded-lg flex flex-col space-y-1.5 text-slate-800">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] font-extrabold text-indigo-850 uppercase tracking-wider flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                🎥 AI Video Scouting Active
+                              </span>
+                              <span className="text-[8px] text-slate-400 font-mono">
+                                Reviewed: {batsman.videoAnalysis.uploadedAt}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-700 font-serif leading-normal italic">
+                              "{batsman.videoAnalysis.primaryVerdict}"
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {batsman.videoAnalysis.weaknessesDetected.map((w, idx) => (
+                                <span key={idx} className="bg-indigo-100/70 text-indigo-900 text-[9px] px-2 py-0.5 rounded font-mono font-medium">
+                                  ⚡ {w}
+                                </span>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoScoutPlayer({ id: batsman.id, type: 'batsman' })}
+                              className="text-[10px] font-bold text-indigo-700 hover:text-indigo-900 mt-1 uppercase text-left w-fit flex items-center gap-1 cursor-pointer"
+                            >
+                              Configure / Update Video ➔
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center text-xs text-slate-400 bg-slate-55/60 border border-slate-200 border-dashed p-3 rounded-lg">
+                            <span className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                              <Video className="w-4 h-4 text-slate-400" />
+                              No tactical match recordings analyzed.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoScoutPlayer({ id: batsman.id, type: 'batsman' })}
+                              className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase cursor-pointer hover:underline"
+                            >
+                              + ANALYZE VIDEO
+                            </button>
+                          </div>
+                        )}
+
                         {/* Sticky analysis note */}
                         <div className="bg-amber-50 p-3 rounded border-l-4 border-amber-400 shadow-xs">
                           <span className="text-[9px] font-bold text-amber-800 uppercase block tracking-wider mb-1">Scouting Field Directives & Strategy</span>
@@ -496,6 +610,15 @@ export default function App() {
                           </div>
 
                           <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoScoutPlayer({ id: bowler.id, type: 'bowler' })}
+                              className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 border border-blue-250 transition text-[10px] text-blue-800 font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                              title="AI Video Scouting and biomechanical evaluation"
+                            >
+                              <Video className="w-3.5 h-3.5" />
+                              AI VIDEO
+                            </button>
                             <button
                               type="button"
                               onClick={() => setPrintingPlayer({ bowler })}
@@ -576,6 +699,52 @@ export default function App() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Video analysis summary block */}
+                        {bowler.videoAnalysis ? (
+                          <div className="bg-indigo-50 border border-indigo-150 p-3 rounded-lg flex flex-col space-y-1.5 text-slate-800">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] font-extrabold text-indigo-850 uppercase tracking-wider flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                🎥 AI Video Scouting Active
+                              </span>
+                              <span className="text-[8px] text-slate-400 font-mono">
+                                Reviewed: {bowler.videoAnalysis.uploadedAt}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-705 font-serif leading-normal italic">
+                              "{bowler.videoAnalysis.primaryVerdict}"
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {bowler.videoAnalysis.weaknessesDetected.map((w, idx) => (
+                                <span key={idx} className="bg-indigo-100/70 text-indigo-900 text-[9px] px-2 py-0.5 rounded font-mono font-medium">
+                                  ⚡ {w}
+                                </span>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoScoutPlayer({ id: bowler.id, type: 'bowler' })}
+                              className="text-[10px] font-bold text-indigo-700 hover:text-indigo-900 mt-1 uppercase text-left w-fit flex items-center gap-1 cursor-pointer"
+                            >
+                              Configure / Update Video ➔
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center text-xs text-slate-400 bg-slate-55/60 border border-slate-200 border-dashed p-3 rounded-lg">
+                            <span className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                              <Video className="w-4 h-4 text-slate-400" />
+                              No tactical match recordings analyzed.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoScoutPlayer({ id: bowler.id, type: 'bowler' })}
+                              className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase cursor-pointer hover:underline"
+                            >
+                              + ANALYZE VIDEO
+                            </button>
+                          </div>
+                        )}
 
                         {/* Operational directive memo notes */}
                         <div className="bg-amber-50 p-3 rounded border-l-4 border-amber-400 shadow-xs">
@@ -743,6 +912,37 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Video analyst overlay modal */}
+      {activeVideoScoutPlayer && (
+        (() => {
+          const details = activeVideoScoutPlayer.type === 'batsman'
+            ? batsmen.find(b => b.id === activeVideoScoutPlayer.id)
+            : bowlers.find(b => b.id === activeVideoScoutPlayer.id);
+          
+          if (!details) return null;
+          
+          return (
+            <VideoAnalystModal
+              playerName={details.name}
+              profileType={activeVideoScoutPlayer.type}
+              orientation={
+                activeVideoScoutPlayer.type === 'batsman'
+                  ? (details as OpponentBatsman).battingHand
+                  : (details as OpponentBowler).bowlingStyle
+              }
+              currentAnalysis={details.videoAnalysis}
+              onClose={() => setActiveVideoScoutPlayer(null)}
+              onSaveAnalysis={(analysis, attrs) => {
+                handleSaveVideoAnalysis(activeVideoScoutPlayer.id, activeVideoScoutPlayer.type, analysis, attrs);
+              }}
+              onRemoveAnalysis={() => {
+                handleRemoveVideoAnalysis(activeVideoScoutPlayer.id, activeVideoScoutPlayer.type);
+              }}
+            />
+          );
+        })()
       )}
 
       {/* Printable / dossier generation preview overlay board */}

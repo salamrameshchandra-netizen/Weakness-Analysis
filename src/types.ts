@@ -33,6 +33,16 @@ export interface OpponentBatsman {
   notes: string;
   stats: PlayerStats;
   customAdded?: boolean;
+  videoAnalysis?: VideoAnalysis;
+}
+
+export interface VideoAnalysis {
+  fileName: string;
+  fileSize: number;
+  uploadedAt: string;
+  primaryVerdict: string;
+  weaknessesDetected: string[];
+  recommendedStrategy: string;
 }
 
 export interface OpponentBowler {
@@ -46,4 +56,5 @@ export interface OpponentBowler {
   notes: string;
   stats: PlayerStats;
   customAdded?: boolean;
+  videoAnalysis?: VideoAnalysis;
 }

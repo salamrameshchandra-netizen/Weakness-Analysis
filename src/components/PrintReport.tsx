@@ -135,6 +135,38 @@ const PlayerSection: React.FC<{
             </div>
           </div>
 
+          {/* AI Video Scouting Report */}
+          {player.videoAnalysis && (
+            <div className="space-y-3 pt-2">
+              <h3 className="text-xs font-bold font-mono uppercase tracking-widest text-indigo-700 border-b pb-1 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                Multimodal AI Video Biomechanical Report
+              </h3>
+              <div className="bg-indigo-50/50 border border-indigo-150 p-4 rounded-lg space-y-3.5">
+                <div className="flex justify-between text-[10px] font-mono text-indigo-800">
+                  <span>CLIP SOURCE: {player.videoAnalysis.fileName}</span>
+                  <span>RELEASED ON: {player.videoAnalysis.uploadedAt}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono tracking-wider text-slate-400 block font-bold">CRITIQUE SUMMARY:</span>
+                  <p className="text-xs italic font-serif leading-relaxed text-indigo-950 block">
+                    "{player.videoAnalysis.primaryVerdict}"
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono tracking-wider text-slate-400 block font-bold">VULNERABILITY COEFFICIENTS:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {player.videoAnalysis.weaknessesDetected.map((w, idx) => (
+                      <div key={idx} className="bg-white border border-indigo-100 p-2.5 rounded text-xs font-semibold text-indigo-900 leading-snug">
+                        ⚡ {w}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Graphical Diagrams Column */}
